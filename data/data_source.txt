@@ -1,0 +1,3 @@
+https://aws.pro-football-reference.com/
+
+manual copy paste (6 players, all data in tidy table format)

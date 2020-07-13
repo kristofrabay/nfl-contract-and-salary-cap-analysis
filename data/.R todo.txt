@@ -1,0 +1,5 @@
+name, contract binary alapjan groupolas lehetseges
+AVG / SUM szamolasok
+kettevenni: futos es nem futos QBk --> futosoknak Rush stats is lesz
+
+kiegesziteni P/O, SB app / SB win binaries
