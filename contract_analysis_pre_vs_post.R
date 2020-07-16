@@ -139,6 +139,85 @@ ggsave("charts/post_season_stats.png")
 
 # before years and after years analysis
 
+# TODO make first year of contract year 0
+# take 3 years before and 3 after
+# compare trend
+
+trend <- data %>% 
+  group_by(Name) %>% 
+  mutate("year0" = ifelse((Post_Contract != lag(Post_Contract)) & (Post_Contract != first(Post_Contract)), 1, 0),
+         "year1" = lag(year0),
+         "year2" = lag(year1),
+         "year3" = lag(year2),
+         "year-1" = lead(year0),
+         "year-2"= lead(`year-1`),
+         "year-3" = lead(`year-2`)) %>% 
+  ungroup() %>% 
+  filter((year0 == 1) | (year1 == 1) |(year2 == 1) |(year3 == 1) |(`year-1` == 1) |(`year-2` == 1) |(`year-3` == 1) | (Name == 'Patrick Mahomes')) %>%
+  mutate(year1 = ifelse(is.na(year1), 0, year1),
+         year2 = ifelse(is.na(year2), 0, year2),
+         year3 = ifelse(is.na(year3), 0, year3)) %>% 
+  mutate(year = ifelse(year0 == 1, 0, 
+                       ifelse(year1 == 1, 1, 
+                              ifelse(year2 == 1, 2, 
+                                     ifelse(year3 == 1, 3, 
+                                            ifelse(`year-1` == 1, -1, 
+                                                   ifelse(`year-2` == 1, -2, -3))))))) %>% 
+  mutate(year = ifelse((Name == 'Patrick Mahomes') & (Year == 2018), -2, 
+                       ifelse((Name == 'Patrick Mahomes') & (Year == 2019), -1, year)))
+
+
+post_season_trend <- trend %>% 
+  select(Name, Post_Contract, year, Division.championships, P.O.appearances, SB.appearances, SB.wins) %>% 
+  rename("Div championships / season" = Division.championships, 
+         "PO appearances / season" = P.O.appearances,
+         "SB appearances / season" = SB.appearances,
+         "SB wins / season" = SB.wins) %>% 
+  gather("Stats", "Values", "Div championships / season", "PO appearances / season", "SB appearances / season", "SB wins / season")
+
+
+post_season_trend %>% 
+  ggplot(aes(year, Values, color = Name, fill = Name, shape = Name)) +
+  geom_point(size = 2.5) +
+  geom_line(linetype = 'dotted', size = 0.8) +
+  facet_wrap(~Stats, scales = 'free') +
+  labs(title = "Post season stats per season before and after long-term contract",
+       x = NULL,
+       y = NULL) +
+  theme_bw() 
+
+
+
+rush_trend <- trend %>% 
+  select(Name, Post_Contract, year, Rush.Y.G, Rush.A.G, Rush.TDs, Rush, Rush.1D) %>% 
+  rename("Yards / game" = Rush.Y.G, 
+         "Yards / attempt" = Rush.A.G,
+         "TDs / season" = Rush.TDs,
+         "Attempts / season" = Rush, 
+         "1st down rushes / season" = Rush.1D) %>% 
+  gather("Stats", "Values", "Yards / game", "Yards / attempt", "TDs / season", "Attempts / season", "1st down rushes / season")
+
+rush_trend %>% 
+  filter(!Name %in% c("Brett Favre", "Drew Bledsoe")) %>% 
+  ggplot(aes(year, Values, color = Name, fill = Name, shape = Name)) +
+  geom_point(size = 2.5) +
+  geom_line(linetype = 'dotted', size = 0.8) +
+  facet_wrap(~Stats, scales = 'free') +
+  labs(title = "Rush stats per season before and after long-term contract",
+       x = NULL,
+       y = NULL) +
+  scale_x_continuous(breaks = seq(-3,3,1)) +
+  theme_bw() 
+
+
+
+
+
+
+
+
+# run all time series for Brett Favre
+
 data$Post_Contract <- ifelse(data$Post_Contract == 0, "Pre", "Post")
 
 # passing stats

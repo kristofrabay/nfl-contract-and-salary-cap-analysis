@@ -8,7 +8,9 @@ View(data)
 
 str(data)
 
-to_convert <- names(data)[ sapply(data, is.factor) ][2:14]
+data$Team <- as.factor(data$Team)
+
+to_convert <- names(data)[ sapply(data, is.character) ]
 data[to_convert] <- lapply(data[to_convert], function(x) as.numeric(str_replace_all(x, "[^0-9]", "")))
 data[to_convert] <- NULL # not needed features for now
 
