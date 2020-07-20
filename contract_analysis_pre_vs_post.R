@@ -17,20 +17,30 @@ names(data)[ sapply(data, is.factor) ]
 to_convert <- c("Start.", "Win.", "Cmp.")
 data[to_convert] <- lapply(data[to_convert], function(x) as.numeric(str_replace_all(x, "[^0-9]", "")) / 100)
 
+# per game stats
+data$TD_thrown_per_game <- data$TD / data$G
+data$Int_thrown_per_game <- data$Int / data$G
+data$TD_ran_per_game <- data$Rush.TDs / data$G
+data$FirstD_pass_per_game <- data$X1D / data$G
+data$FirstD_run_per_game <- data$Rush.1D / data$G
+data$pass_attempts_per_game <- data$Att / data$G
+data$pass_to_rush_attempts <- data$pass_attempts_per_game / data$Rush.A.G
+
 
 # before after avgs
 
 pass <- data %>% 
-  select(Name, Post_Contract, Yds, TD, Int, Win., Cmp., Rate, Y.G, X1D) %>% 
-  rename("TDs / season" = TD,
-         "Ints / season" = Int, 
-         "Completion % / season" = Cmp.,
+  select(Name, Post_Contract, TD_thrown_per_game, Int_thrown_per_game, Win., Cmp., Y.G, FirstD_pass_per_game, pass_attempts_per_game) %>% 
+  rename("TDs thrown / game" = TD_thrown_per_game,
+         "Ints thrown / game" = Int_thrown_per_game, 
+         "Pass attempts / game" = pass_attempts_per_game,
+         "Completion %" = Cmp.,
          "Yards / game" = Y.G,
-         '1st down passing / season' = X1D) %>% 
+         '1st down passes / game' = FirstD_pass_per_game) %>% 
   group_by(Name, Post_Contract) %>% 
   summarise_each(funs(mean(., na.rm = TRUE))) %>% 
   ungroup() %>% 
-  gather("Stats", "Values", "Yards / game", "Completion % / season" , "TDs / season", "Ints / season", '1st down passing / season')
+  gather("Stats", "Values", "Yards / game", "Completion %" , "TDs thrown / game", "Ints thrown / game", '1st down passes / game', "Pass attempts / game")
 
 pass %>% 
   ggplot(aes(Post_Contract, Values, color = Name, fill = Name, shape = Name)) +
@@ -38,11 +48,11 @@ pass %>%
   geom_point(size = 2.5) +
   geom_point(data = pass %>% filter(Name == "Patrick Mahomes"), aes(Post_Contract, Values), size=5, show.legend = F) +
   geom_line(linetype = 'dotted', size = 0.8) +
-  facet_wrap(~Stats, scales = 'free') +
+  facet_wrap(~Stats, scales = 'free_y') +
   labs(title = "Pass stats per season before and after long-term contract",
        x = NULL,
        y = NULL) +
-  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre", "Post")) +
+  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre-contract", "Post-contract")) +
   theme_bw() 
 
 ggsave("charts/pass_stats.png")
@@ -67,11 +77,11 @@ misc %>%
   geom_point(size = 2.5) +
   geom_point(data = misc %>% filter(Name == "Patrick Mahomes"), aes(Post_Contract, Values), size=5, show.legend = F) +
   geom_line(linetype = 'dotted', size = 0.8) +
-  facet_wrap(~Stats, scales = 'free') +
+  facet_wrap(~Stats, scales = 'free_y') +
   labs(title = "Misc stats per season before and after long-term contract",
        x = NULL,
        y = NULL) +
-  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre", "Post")) +
+  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre-contract", "Post-contract")) +
   theme_bw() 
 
 ggsave("charts/misc_stats.png")
@@ -80,16 +90,17 @@ ggsave("charts/misc_stats.png")
 
 
 rush <- data %>% 
-  select(Name, Post_Contract, Rush.Y.G, Rush.A.G, Rush.TDs, Rush, Rush.1D) %>% 
-  rename("Yards / game" = Rush.Y.G, 
-         "Yards / attempt" = Rush.A.G,
-         "TDs / season" = Rush.TDs,
-         "Attempts / season" = Rush, 
-         "1st down rushes / season" = Rush.1D) %>% 
+  select(Name, Post_Contract, Rush.Y.A, Rush.A.G, Rush.Y.G, TD_ran_per_game, FirstD_run_per_game, pass_to_rush_attempts) %>% 
+  rename("Rush yards / attempt" = Rush.Y.A, 
+         "Rush attempts / game" = Rush.A.G,
+         "Rush yards / game" = Rush.Y.G,
+         "Rush TDs / game" = TD_ran_per_game,
+         "1st down rushes / game" = FirstD_run_per_game,
+         "Pass att. to rush att. / game" = pass_to_rush_attempts) %>% 
   group_by(Name, Post_Contract) %>% 
   summarise_each(funs(mean(., na.rm = TRUE))) %>% 
   ungroup() %>% 
-  gather("Stats", "Values", "Yards / game", "Yards / attempt", "TDs / season", "Attempts / season", "1st down rushes / season")
+  gather("Stats", "Values", "Rush yards / attempt", "Rush attempts / game", "Rush yards / game", "Rush TDs / game", "1st down rushes / game", "Pass att. to rush att. / game")
 
 rush %>% 
   ggplot(aes(Post_Contract, Values, color = Name, fill = Name, shape = Name)) +
@@ -97,11 +108,11 @@ rush %>%
   geom_point(size = 2.5) +
   geom_point(data = rush %>% filter(Name == "Patrick Mahomes"), aes(Post_Contract, Values), size=5, show.legend = F) +
   geom_line(linetype = 'dotted', size = 0.8) +
-  facet_wrap(~Stats, scales = 'free') +
+  facet_wrap(~Stats, scales = 'free_y') +
   labs(title = "Rush stats per season before and after long-term contract",
        x = NULL,
        y = NULL) +
-  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre", "Post")) +
+  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre-contract", "Post-contract")) +
   theme_bw() 
 
 ggsave("charts/rush_stats.png")
@@ -109,14 +120,14 @@ ggsave("charts/rush_stats.png")
 
 post_season <- data %>% 
   select(Name, Post_Contract, Division.championships, P.O.appearances, SB.appearances, SB.wins) %>% 
-  rename("Div championships / season" = Division.championships, 
-         "PO appearances / season" = P.O.appearances,
-         "SB appearances / season" = SB.appearances,
-         "SB wins / season" = SB.wins) %>% 
+  rename("% of seasons with division championships" = Division.championships, 
+         "% of seasons with PO appearances" = P.O.appearances,
+         "% of seasons with SB appearances" = SB.appearances,
+         "% of seasons with SB wins" = SB.wins) %>% 
   group_by(Name, Post_Contract) %>% 
   summarise_each(funs(mean(., na.rm = TRUE))) %>% 
   ungroup() %>% 
-  gather("Stats", "Values", "Div championships / season", "PO appearances / season", "SB appearances / season", "SB wins / season")
+  gather("Stats", "Values", "% of seasons with division championships", "% of seasons with PO appearances", "% of seasons with SB appearances", "% of seasons with SB wins")
 
 
 post_season %>% 
@@ -126,11 +137,11 @@ post_season %>%
   geom_point(size = 2.5) +
   geom_point(data = post_season %>% filter(Name == "Patrick Mahomes"), aes(Post_Contract, Values), size=5, show.legend = F) +
   geom_line(linetype = 'dotted', size = 0.8) +
-  facet_wrap(~Stats, scales = 'free') +
+  facet_wrap(~Stats, scales = 'free_y') +
   labs(title = "Post season stats per season before and after long-term contract",
        x = NULL,
        y = NULL) +
-  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre", "Post")) +
+  scale_x_continuous( limits = c(-0.3, 1.3), breaks = c(0, 1), labels = c("Pre-contract", "Post-contract")) +
   scale_y_continuous(labels = scales::percent_format(accuracy = 5L)) +
   theme_bw() 
 
@@ -142,6 +153,7 @@ ggsave("charts/post_season_stats.png")
 # TODO make first year of contract year 0
 # take 3 years before and 3 after
 # compare trend
+
 
 trend <- data %>% 
   group_by(Name) %>% 
@@ -166,6 +178,7 @@ trend <- data %>%
   mutate(year = ifelse((Name == 'Patrick Mahomes') & (Year == 2018), -2, 
                        ifelse((Name == 'Patrick Mahomes') & (Year == 2019), -1, year)))
 
+trend[is.na(trend)] <- 0
 
 post_season_trend <- trend %>% 
   select(Name, Post_Contract, year, Division.championships, P.O.appearances, SB.appearances, SB.wins) %>% 
@@ -187,15 +200,15 @@ post_season_trend %>%
   theme_bw() 
 
 
-
 rush_trend <- trend %>% 
-  select(Name, Post_Contract, year, Rush.Y.G, Rush.A.G, Rush.TDs, Rush, Rush.1D) %>% 
-  rename("Yards / game" = Rush.Y.G, 
-         "Yards / attempt" = Rush.A.G,
-         "TDs / season" = Rush.TDs,
-         "Attempts / season" = Rush, 
-         "1st down rushes / season" = Rush.1D) %>% 
-  gather("Stats", "Values", "Yards / game", "Yards / attempt", "TDs / season", "Attempts / season", "1st down rushes / season")
+  select(Name, year, Post_Contract, Rush.Y.A, Rush.A.G, Rush.Y.G, TD_ran_per_game, FirstD_run_per_game, pass_to_rush_attempts) %>% 
+  rename("Rush yards / attempt" = Rush.Y.A, 
+         "Rush attempts / game" = Rush.A.G,
+         "Rush yards / game" = Rush.Y.G,
+         "Rush TDs / game" = TD_ran_per_game,
+         "1st down rushes / game" = FirstD_run_per_game,
+         "Pass att. to rush att. / game" = pass_to_rush_attempts) %>% 
+  gather("Stats", "Values", "Rush yards / attempt", "Rush attempts / game", "Rush yards / game", "Rush TDs / game", "1st down rushes / game", "Pass att. to rush att. / game")
 
 rush_trend %>% 
   filter(!Name %in% c("Brett Favre", "Drew Bledsoe")) %>% 
@@ -203,14 +216,59 @@ rush_trend %>%
   geom_point(size = 2.5) +
   geom_line(linetype = 'dotted', size = 0.8) +
   facet_wrap(~Stats, scales = 'free') +
-  labs(title = "Rush stats per season before and after long-term contract",
+  labs(title = "Rush stats around contract signing year 0",
        x = NULL,
        y = NULL) +
   scale_x_continuous(breaks = seq(-3,3,1)) +
   theme_bw() 
 
+ggsave("charts/rush_stats_trend.png")
 
 
+pass_trend <- trend %>% 
+  select(Name, year, Post_Contract, TD_thrown_per_game, Int_thrown_per_game, Win., Cmp., Y.G, FirstD_pass_per_game, pass_attempts_per_game) %>% 
+  rename("TDs thrown / game" = TD_thrown_per_game,
+         "Ints thrown / game" = Int_thrown_per_game, 
+         "Pass attempts / game" = pass_attempts_per_game,
+         "Completion %" = Cmp.,
+         "Yards / game" = Y.G,
+         '1st down passes / game' = FirstD_pass_per_game) %>% 
+  gather("Stats", "Values", "Yards / game", "Completion %" , "TDs thrown / game", "Ints thrown / game", '1st down passes / game', "Pass attempts / game")
+
+pass_trend %>% 
+  ggplot(aes(year, Values, color = Name, fill = Name, shape = Name)) +
+  geom_point(size = 2.5) +
+  geom_line(linetype = 'dotted', size = 0.8) +
+  facet_wrap(~Stats, scales = 'free') +
+  labs(title = "Pass stats around contract signing year 0",
+       x = NULL,
+       y = NULL) +
+  scale_x_continuous(breaks = seq(-3,3,1)) +
+  theme_bw() 
+
+ggsave("charts/pass_stats_trend.png")
+
+
+misc_trend <- trend %>% 
+  select(Name, year, Post_Contract, Yds, TD, Int, Win., Cmp., Rate, Y.G, X4QC, GWD) %>% 
+  rename("Win pctage / season" = Win.,
+         "QB rating / season" = Rate,
+         "4th quarter comebacks / season" = X4QC,
+         "Game winning drives / season" = GWD) %>% 
+  gather("Stats", "Values", "Win pctage / season", "QB rating / season", "4th quarter comebacks / season", "Game winning drives / season")
+
+misc_trend %>% 
+  ggplot(aes(year, Values, color = Name, fill = Name, shape = Name)) +
+  geom_point(size = 2.5) +
+  geom_line(linetype = 'dotted', size = 0.8) +
+  facet_wrap(~Stats, scales = 'free') +
+  labs(title = "Misc stats around contract signing year 0",
+       x = NULL,
+       y = NULL) +
+  scale_x_continuous(breaks = seq(-3,3,1)) +
+  theme_bw() 
+
+ggsave("charts/misc_stats_trend.png")
 
 
 
